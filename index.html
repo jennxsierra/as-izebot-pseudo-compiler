@@ -1,10 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script type="module">
-import { add } from "./build/release.js";
-document.body.innerText = add(1, 2);
-</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IZEBOT Pseudo-Compiler</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+    }
+    .grammar {
+      background: #fff;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+      border-left: 4px solid #007acc;
+    }
+    .input-section {
+      margin: 20px 0;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      font-family: 'Courier New', monospace;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background: #007acc;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #005a9e;
+    }
+    .output {
+      background: #fff;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+    }
+    .error {
+      color: #d32f2f;
+      background: #ffebee;
+    }
+    .success {
+      color: #388e3c;
+    }
+  </style>
 </head>
-<body></body>
+<body>
+  <h1>IZEBOT Pseudo-Compiler</h1>
+  
+  <div class="grammar">
+    <h3>BNF Grammar:</h3>
+    <pre>&lt;program&gt; → EXEC &lt;stmt_list&gt; HALT
+&lt;stmt_list&gt; → &lt;binding&gt; &gt; | &lt;binding&gt; &gt; &lt;stmt_list&gt;
+&lt;binding&gt; → &lt;key&gt; = &lt;move&gt;
+&lt;key&gt; → key &lt;key_id&gt;
+&lt;key_id&gt; → A | B | C | D
+&lt;move&gt; → DRVF | DRVB | TRNL | TRNR | SPNL | SPNR</pre>
+  </div>
+
+  <div class="input-section">
+    <h3>Enter Program:</h3>
+    <textarea id="input" rows="3" placeholder="EXEC key A = DRVF > HALT">EXEC key A = DRVF > key B = DRVB > HALT</textarea>
+    <br>
+    <button onclick="compile()">Compile</button>
+    <button onclick="clearOutput()">Clear</button>
+  </div>
+
+  <div id="output"></div>
+
+  <script type="module">
+    import { instantiate } from "./build/release.js";
+
+    let wasmExports;
+
+    async function init() {
+      const module = await instantiate();
+      wasmExports = module.exports;
+      console.log('WASM module loaded');
+    }
+
+    window.compile = function() {
+      const input = document.getElementById('input').value;
+      const outputDiv = document.getElementById('output');
+      
+      if (!wasmExports) {
+        outputDiv.innerHTML = '<div class="output error">WASM module not loaded yet. Please wait...</div>';
+        return;
+      }
+
+      try {
+        // Manual string marshalling
+        const inputPtr = wasmExports.__newString(input);
+        const resultPtr = wasmExports.compile(inputPtr);
+        const result = wasmExports.__getString(resultPtr);
+        
+        if (result.startsWith('ERROR:')) {
+          const errorMsg = result.substring(6);
+          outputDiv.innerHTML = `<div class="output error"><h3>Error:</h3>${errorMsg}\n\nInvalid sentence of the meta-language</div>`;
+        } else {
+          // Parse the result
+          const sections = {
+            derivation: '',
+            tree: '',
+            code: ''
+          };
+          
+          let currentSection = '';
+          const lines = result.split('\n');
+          
+          for (const line of lines) {
+            if (line === 'DERIVATION_START') currentSection = 'derivation';
+            else if (line === 'DERIVATION_END') currentSection = '';
+            else if (line === 'TREE_START') currentSection = 'tree';
+            else if (line === 'TREE_END') currentSection = '';
+            else if (line === 'CODE_START') currentSection = 'code';
+            else if (line === 'CODE_END') currentSection = '';
+            else if (currentSection && line !== 'SUCCESS') {
+              sections[currentSection] += line + '\n';
+            }
+          }
+
+          outputDiv.innerHTML = `
+            <div class="output success">
+              <h3>✓ Derivation Successful</h3>
+            </div>
+            <div class="output">
+              <h3>Leftmost Derivation:</h3>
+              <pre>${sections.derivation}</pre>
+            </div>
+            <div class="output">
+              <h3>Parse Tree:</h3>
+              <pre>${sections.tree}</pre>
+            </div>
+            <div class="output">
+              <h3>Generated PBASIC Code:</h3>
+              <pre>${sections.code}</pre>
+            </div>
+          `;
+        }
+      } catch (error) {
+        outputDiv.innerHTML = `<div class="output error"><h3>Error:</h3>${error.message}</div>`;
+      }
+    };
+
+    window.clearOutput = function() {
+      document.getElementById('output').innerHTML = '';
+    };
+
+    init();
+  </script>
+</body>
 </html>

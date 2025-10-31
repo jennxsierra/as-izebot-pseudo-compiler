@@ -15,12 +15,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build:wasm": "asc assembly/index.ts --config asconfig.json --target release",
+    "build:wasm": "asc assembly/src/compiler/index.ts --config asconfig.json --target release",
     "build:host": "tsc -p tsconfig.host.json",
     "build": "npm run build:wasm && npm run build:host",
     "dev": "ts-node --project tsconfig.host.json host/main.ts",
     "start": "node dist/host/main.js",
-    "clean": "rimraf build dist"
+    "clean": "rimraf build dist output"
   },
   "devDependencies": {
     "@assemblyscript/loader": "^0.28.9",

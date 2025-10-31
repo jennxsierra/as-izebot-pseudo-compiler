@@ -1,69 +1,156 @@
-// host/main.ts
-import * as readline from "node:readline/promises";
-import { stdin as input, stdout as output } from "node:process";
-import { writeFile } from "node:fs/promises";
-import { loadWasm } from "./wasm.js";
+import * as readline from 'readline';
+import { loadWasm } from './wasm.js';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
 
-async function pause(rl: readline.Interface) {
-  await rl.question("Press Enter to continue...");
+let wasm: any;
+
+async function initialize() {
+  console.log('Loading WASM module...');
+  const module = await loadWasm();
+  wasm = module.exports;
+  console.log('WASM module loaded successfully!\n');
 }
 
-async function run() {
-  const rl = readline.createInterface({ input, output });
-  const as = await loadWasm();
+function displayGrammar() {
+  console.log('BNF Grammar:');
+  console.log('<program> -> EXEC <stmt_list> HALT');
+  console.log('<stmt_list> -> <binding> > | <binding> > <stmt_list>');
+  console.log('<binding> -> <key> = <move>');
+  console.log('<key> -> key <key_id>');
+  console.log('<key_id> -> A | B | C | D');
+  console.log('<move> -> DRVF | DRVB | TRNL | TRNR | SPNL | SPNR');
+  console.log('');
+}
 
-  // 1) Show grammar
-  console.log("\nGrammar:\n");
-  console.log(as.__getString(as.showGrammar()));
+async function mainLoop() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  const question = (prompt: string): Promise<string> => {
+    return new Promise((resolve) => {
+      rl.question(prompt, resolve);
+    });
+  };
+
+  const pause = (): Promise<void> => {
+    return new Promise((resolve) => {
+      rl.question('\nPress Enter to continue...', () => {
+        resolve();
+      });
+    });
+  };
 
   while (true) {
-    const s = await rl.question("\nEnter input (or QUIT): ");
-    if (s.trim().toUpperCase() === "QUIT") break;
+  // console.clear();
+    displayGrammar();
+    
+    const input = await question('Enter a sentence (or QUIT to exit): ');
+    
+    if (input.trim() === 'QUIT') {
+      console.log('\nExiting...');
+      rl.close();
+      break;
+    }
 
-    // 2) Compile via WASM: string → pointer, pointer → string
-    const ptr = as.__newString(s);
-    const resPtr = as.compile(ptr);
-    const json = as.__getString(resPtr);
+    console.log('\n=== Processing Input ===\n');
 
-    // 3) Display sections
-    type Result = {
-      grammar: string;
-      derivationSteps: string[];
-      parseTreeAscii: string;
-      pbasic: string;
-    };
-    let result: Result;
-    try {
-      result = JSON.parse(json);
-    } catch (e) {
-      console.error("Compiler returned malformed JSON:", json);
+    // Call the WASM compile function with manual string marshalling
+    const inputPtr = wasm.__newString(input);
+    const resultPtr = wasm.compile(inputPtr);
+    const result = wasm.__getString(resultPtr);
+
+    if (result.startsWith('ERROR:')) {
+      const errorMsg = result.substring(6);
+      console.error(errorMsg);
+      console.log('\nInvalid sentence of the meta-language');
+      await pause();
       continue;
     }
 
-    console.log("\nLeftmost derivation steps:\n");
-    result.derivationSteps.forEach((line, i) =>
-      console.log(`${i + 1}. ${line}`)
-    );
-    await pause(rl);
+    // Parse the result
+    const lines = result.split('\n');
+    let section = '';
+    let derivation = '';
+    let tree = '';
+    let code = '';
 
-    console.log("\nParse tree:\n");
-    console.log(result.parseTreeAscii);
-    await pause(rl);
+    for (const line of lines) {
+      if (line === 'SUCCESS') continue;
+      if (line === 'DERIVATION_START') {
+        section = 'derivation';
+        continue;
+      }
+      if (line === 'DERIVATION_END') {
+        section = '';
+        continue;
+      }
+      if (line === 'TREE_START') {
+        section = 'tree';
+        continue;
+      }
+      if (line === 'TREE_END') {
+        section = '';
+        continue;
+      }
+      if (line === 'CODE_START') {
+        section = 'code';
+        continue;
+      }
+      if (line === 'CODE_END') {
+        section = '';
+        continue;
+      }
 
-    console.log("\nGenerated PBASIC:\n");
-    console.log(result.pbasic);
-
-    const save = await rl.question("\nSave as IZEBOT.BSP? (y/n): ");
-    if (save.trim().toLowerCase().startsWith("y")) {
-      await writeFile("IZEBOT.BSP", result.pbasic, "utf8");
-      console.log("Saved IZEBOT.BSP");
+      if (section === 'derivation') {
+        derivation += line + '\n';
+      } else if (section === 'tree') {
+        tree += line + '\n';
+      } else if (section === 'code') {
+        code += line + '\n';
+      }
     }
-  }
 
-  rl.close();
+    // Display derivation
+    console.log('Leftmost Derivation:');
+    console.log(derivation);
+    console.log('Derivation successful!\n');
+    await pause();
+
+    // Display parse tree
+    console.log('\n=== Parse Tree ===\n');
+    console.log(tree);
+    await pause();
+
+    // Display and save PBASIC code
+    console.log('\n=== Generated PBASIC Code ===\n');
+    console.log(code);
+
+    // Save to file
+    try {
+      const outputDir = join(process.cwd(), 'output');
+      await mkdir(outputDir, { recursive: true });
+      const outputPath = join(outputDir, 'IZEBOT.BSP');
+      await writeFile(outputPath, code, 'utf-8');
+      console.log(`\nPBASIC code saved to: ${outputPath}`);
+    } catch (error) {
+      console.error('Error saving file:', error);
+    }
+
+    await pause();
+  }
 }
 
-run().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+async function main() {
+  try {
+    await initialize();
+    await mainLoop();
+  } catch (error) {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  }
+}
+
+main();

@@ -1,17 +1,21 @@
-// host/wasm.ts
-import { readFile } from "node:fs/promises";
-import { instantiate } from "@assemblyscript/loader";
-
-type Loader = {
-  memory: WebAssembly.Memory;
-  __newString: (s: string) => number;
-  __getString: (ptr: number) => string;
-  compile: (ptr: number) => number;     // string in → string out
-  showGrammar: () => number;            // string out
-};
+import { readFile } from 'fs/promises';
+import { instantiate, ASUtil } from '@assemblyscript/loader';
 
 export async function loadWasm() {
-  const wasm = await readFile("build/release.wasm");
-  const { exports } = await instantiate<Loader>(wasm, {});
-  return exports;
+  const wasmBuffer = await readFile('./build/release.wasm');
+  const module = await instantiate(wasmBuffer, {
+    env: {
+      abort(msg: number, file: number, line: number, column: number) {
+        console.error('Abort called');
+      },
+      seed(): number {
+        return Date.now();
+      }
+    }
+  });
+
+  return module;
 }
+
+export type WasmModule = Awaited<ReturnType<typeof loadWasm>>;
+
