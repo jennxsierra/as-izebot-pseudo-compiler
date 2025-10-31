@@ -5,6 +5,7 @@ dist/
 .env
 
 # iZEBOT file outputs
+output
 *.bsp
 
 # Logs
