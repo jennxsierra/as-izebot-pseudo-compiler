@@ -1,170 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IZEBOT Pseudo-Compiler</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iZEBOT Compiler</title>
   <style>
     body {
-      font-family: 'Courier New', monospace;
+      font-family: monospace;
+      background-color: #fafafa;
+      color: #222;
       max-width: 900px;
-      margin: 40px auto;
+      margin: 0 auto;
       padding: 20px;
-      background: #f5f5f5;
-    }
-    h1 {
-      color: #333;
-    }
-    .grammar {
-      background: #fff;
-      padding: 15px;
-      border-radius: 5px;
-      margin: 20px 0;
-      border-left: 4px solid #007acc;
-    }
-    .input-section {
-      margin: 20px 0;
     }
     textarea {
       width: 100%;
-      padding: 10px;
-      font-family: 'Courier New', monospace;
-      border: 2px solid #ddd;
-      border-radius: 4px;
+      height: 100px;
+      margin-bottom: 10px;
+      font-family: monospace;
+      font-size: 14px;
     }
     button {
-      background: #007acc;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
+      padding: 8px 16px;
       margin: 5px;
+      cursor: pointer;
     }
-    button:hover {
-      background: #005a9e;
+    pre {
+      background: #f0f0f0;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: monospace;
     }
-    .output {
-      background: #fff;
-      padding: 15px;
-      border-radius: 5px;
-      margin: 20px 0;
-      white-space: pre-wrap;
-      font-family: 'Courier New', monospace;
-    }
-    .error {
-      color: #d32f2f;
-      background: #ffebee;
-    }
-    .success {
-      color: #388e3c;
+    canvas {
+      border: 1px solid #000;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>IZEBOT Pseudo-Compiler</h1>
-  
-  <div class="grammar">
-    <h3>BNF Grammar:</h3>
-    <pre>&lt;program&gt; → EXEC &lt;stmt_list&gt; HALT
-&lt;stmt_list&gt; → &lt;binding&gt; &gt; | &lt;binding&gt; &gt; &lt;stmt_list&gt;
-&lt;binding&gt; → &lt;key&gt; = &lt;move&gt;
-&lt;key&gt; → key &lt;key_id&gt;
-&lt;key_id&gt; → A | B | C | D
-&lt;move&gt; → DRVF | DRVB | TRNL | TRNR | SPNL | SPNR</pre>
-  </div>
+  <h1>THIS PAGE ISN'T PART OF THE PROGRAM — CREATED FOR FUN the bot doesnt use pbasic output </h1>
+  <h2>iZEBOT Meta-Language Compiler</h2>
+  <p>AssemblyScript Demo: 1 + 2 = <span id="addResult"></span></p>
+  <p>Enter your iZEBOT code and click <b>Compile</b> to generate PBASIC + Tree:</p>
 
-  <div class="input-section">
-    <h3>Enter Program:</h3>
-    <textarea id="input" rows="3" placeholder="EXEC key A = DRVF > HALT">EXEC key A = DRVF > key B = DRVB > HALT</textarea>
-    <br>
-    <button onclick="compile()">Compile</button>
-    <button onclick="clearOutput()">Clear</button>
-  </div>
+  <textarea id="input">EXEC key A = DRVF> key B = DRVB> key C = SPNL> key D = SPNR> HALT</textarea>
+  <br />
+  <button id="compileBtn">Compile</button>
+  <button id="downloadBtn" style="display:none;">Download PBASIC</button>
 
-  <div id="output"></div>
+  <h2>Output:</h2>
+  <pre id="output"></pre>
+
+  <h2>Bot Simulator</h2>
+  <p>Controls: A=Forward, B=Backward, C=SpinLeft, D=SpinRight</p>
+  <canvas id="botCanvas" width="400" height="400"></canvas><br />
+  <button id="btnA">A </button>
+  <button id="btnB">B </button>
+  <button id="btnC">C </button>
+  <button id="btnD">D</button>
 
   <script type="module">
-    import { instantiate } from "./build/release.js";
+    import { compile } from "./build/release.js";
 
-    let wasmExports;
+    // Simple demo: compile a basic input to show it works
+    const demoResult = compile("EXEC key A = DRVF> HALT");
+    document.getElementById("addResult").textContent = demoResult.includes("Input accepted") ? "3 (demo compile works)" : "Error";
 
-    async function init() {
-      const module = await instantiate();
-      wasmExports = module.exports;
-      console.log('WASM module loaded');
+    const inputTextarea = document.getElementById("input");
+    const compileBtn = document.getElementById("compileBtn");
+    const outputPre = document.getElementById("output");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const botCanvas = document.getElementById("botCanvas");
+    const ctx = botCanvas.getContext("2d");
+
+    // --- Bot State ---
+    let botX = 200, botY = 200, botAngle = 0;
+    const botSpeed = 10, turnSpeed = 0.25;
+    let keyMappings = {};
+
+    function drawBot() {
+      ctx.clearRect(0, 0, botCanvas.width, botCanvas.height);
+      const sq = 20;
+      for (let x = 0; x < botCanvas.width; x += sq)
+        for (let y = 0; y < botCanvas.height; y += sq) {
+          ctx.fillStyle = (x/sq + y/sq) % 2 ? "#ccc" : "#eee";
+          ctx.fillRect(x, y, sq, sq);
+        }
+      ctx.save();
+      ctx.translate(botX, botY);
+      ctx.rotate(botAngle);
+      // Draw rectangle bot: red fill, blue outline
+      ctx.fillStyle = "red";
+      ctx.fillRect(-20, -10, 40, 20);
+      ctx.strokeStyle = "blue";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-20, -10, 40, 20);
+      ctx.restore();
+      
+    }
+    drawBot();
+
+    function moveBot(key) {
+      const move = keyMappings[key];
+      if (!move) return alert(`No mapping for key ${key}`);
+      switch (move) {
+        case "DRVF": botX += Math.cos(botAngle)*botSpeed; botY += Math.sin(botAngle)*botSpeed; break;
+        case "DRVB": botX -= Math.cos(botAngle)*botSpeed; botY -= Math.sin(botAngle)*botSpeed; break;
+        case "TRNL": botAngle -= turnSpeed; break;
+        case "TRNR": botAngle += turnSpeed; break;
+        case "SPNL": botAngle -= turnSpeed; break;
+        case "SPNR": botAngle += turnSpeed; break;
+      }
+      drawBot();
     }
 
-    window.compile = function() {
-      const input = document.getElementById('input').value;
-      const outputDiv = document.getElementById('output');
-      
-      if (!wasmExports) {
-        outputDiv.innerHTML = '<div class="output error">WASM module not loaded yet. Please wait...</div>';
-        return;
+    document.getElementById("btnA").onclick = ()=>moveBot("A");
+    document.getElementById("btnB").onclick = ()=>moveBot("B");
+    document.getElementById("btnC").onclick = ()=>moveBot("C");
+    document.getElementById("btnD").onclick = ()=>moveBot("D");
+
+    // compile function is already imported above
+
+    function parseAssignments(input) {
+      const regex = /key\s+([A-Z])\s*=\s*([A-Z]+)\s*>/gi;
+      const out = [];
+      let m;
+      while ((m = regex.exec(input)) !== null) out.push({ key: m[1], mov: m[2] });
+      return out;
+    }
+
+    // Update key mappings dynamically on input change
+    inputTextarea.addEventListener('input', () => {
+      const assignments = parseAssignments(inputTextarea.value);
+      keyMappings = {};
+      for (const a of assignments) keyMappings[a.key] = a.mov;
+    });
+
+    // Set initial mappings
+    const initialAssignments = parseAssignments(inputTextarea.value);
+    keyMappings = {};
+    for (const a of initialAssignments) keyMappings[a.key] = a.mov;
+
+    compileBtn.addEventListener("click", () => {
+      const input = inputTextarea.value;
+      const result = compile(input);
+      outputPre.textContent = result;
+
+      const assignments = parseAssignments(input);
+      keyMappings = {};
+      for (const a of assignments) keyMappings[a.key] = a.mov;
+
+      if (result.includes("Generated PBASIC")) {
+        downloadBtn.style.display = "inline";
+        // Extract PBASIC code for download
+        const lines = result.split('\n');
+        const pbasicStart = lines.findIndex(line => line.includes('Generated PBASIC program:'));
+        const pbasicLines = lines.slice(pbasicStart + 1).filter(line => line.trim() !== '');
+        const pbasicCode = pbasicLines.join('\n');
+        downloadBtn.onclick = () => {
+          const blob = new Blob([pbasicCode], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "IZEBOT.BSP";
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+      } else {
+        downloadBtn.style.display = "none";
       }
+    });
 
-      try {
-        // Manual string marshalling
-        const inputPtr = wasmExports.__newString(input);
-        const resultPtr = wasmExports.compile(inputPtr);
-        const result = wasmExports.__getString(resultPtr);
-        
-        if (result.startsWith('ERROR:')) {
-          const errorMsg = result.substring(6);
-          outputDiv.innerHTML = `<div class="output error"><h3>Error:</h3>${errorMsg}\n\nInvalid sentence of the meta-language</div>`;
-        } else {
-          // Parse the result
-          const sections = {
-            derivation: '',
-            tree: '',
-            code: ''
-          };
-          
-          let currentSection = '';
-          const lines = result.split('\n');
-          
-          for (const line of lines) {
-            if (line === 'DERIVATION_START') currentSection = 'derivation';
-            else if (line === 'DERIVATION_END') currentSection = '';
-            else if (line === 'TREE_START') currentSection = 'tree';
-            else if (line === 'TREE_END') currentSection = '';
-            else if (line === 'CODE_START') currentSection = 'code';
-            else if (line === 'CODE_END') currentSection = '';
-            else if (currentSection && line !== 'SUCCESS') {
-              sections[currentSection] += line + '\n';
-            }
-          }
 
-          outputDiv.innerHTML = `
-            <div class="output success">
-              <h3>✓ Derivation Successful</h3>
-            </div>
-            <div class="output">
-              <h3>Leftmost Derivation:</h3>
-              <pre>${sections.derivation}</pre>
-            </div>
-            <div class="output">
-              <h3>Parse Tree:</h3>
-              <pre>${sections.tree}</pre>
-            </div>
-            <div class="output">
-              <h3>Generated PBASIC Code:</h3>
-              <pre>${sections.code}</pre>
-            </div>
-          `;
-        }
-      } catch (error) {
-        outputDiv.innerHTML = `<div class="output error"><h3>Error:</h3>${error.message}</div>`;
-      }
-    };
-
-    window.clearOutput = function() {
-      document.getElementById('output').innerHTML = '';
-    };
-
-    init();
   </script>
 </body>
 </html>
