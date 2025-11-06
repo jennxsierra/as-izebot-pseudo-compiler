@@ -13,13 +13,26 @@ async function initialize() {
 }
 
 function displayGrammar() {
-  console.log('\nBNF Grammar:');
-  console.log('<program>      →  EXEC <stmt_list> HALT');
-  console.log('<stmt_list>    →  <binding> > | <binding> > <stmt_list>');
-  console.log('<binding>      →  <key> = <move>');
-  console.log('<key>          →  key <key_id>');
-  console.log('<key_id>       →  A | B | C | D');
-  console.log('<move>         →  DRVF | DRVB | TRNL | TRNR | SPNL | SPNR');
+  console.log('\n╔════════════════════════════════════════════════════════╗');
+  console.log('║                  iZEBOT PSEUDO-COMPILER                ║');
+  console.log('║                       BNF GRAMMAR                      ║');
+  console.log('╠════════════════════════════════════════════════════════╣');
+  console.log('║                                                        ║');
+  console.log('║        <program>      →  EXEC <stmt_list> HALT         ║');
+  console.log('║        <stmt_list>    →  <binding> >                   ║');
+  console.log('║                          | <binding> > <stmt_list>     ║');
+  console.log('║        <binding>      →  <key> = <move>                ║');
+  console.log('║        <key>          →  key <key_id>                  ║');
+  console.log('║        <key_id>       →  A | B | C | D                 ║');
+  console.log('║        <move>         →  DRVF | DRVB | TRNL            ║');
+  console.log('║                          | TRNR | SPNL | SPNR          ║');
+  console.log('║                                                        ║');
+  console.log('╠════════════════════════════════════════════════════════╣');
+  console.log('║                        EXAMPLE:                        ║');
+  console.log('║                                                        ║');
+  console.log('║       ↳ EXEC key A = DRVF > key B = TRNR > HALT        ║');
+  console.log('║                                                        ║');
+  console.log('╚════════════════════════════════════════════════════════╝');
   console.log('');
 }
 
@@ -54,8 +67,6 @@ async function mainLoop() {
       rl.close();
       break;
     }
-
-    console.log('\n=== Processing Input ===\n');
 
     // Call the WASM compile function with manual string marshalling
     const inputPtr = wasm.__newString(input);
@@ -113,18 +124,24 @@ async function mainLoop() {
     }
 
     // Display derivation
-    console.log('Leftmost Derivation:');
+    console.log('The input string was successfully parsed!\n');
+    console.log('\n╔══════════════════════════════════════╗');
+    console.log('║          LEFTMOST DERIVATION         ║');
+    console.log('╚══════════════════════════════════════╝');
     console.log(derivation);
-    console.log('Derivation successful!\n');
     await pause();
 
     // Display parse tree
-    console.log('\n=== Parse Tree ===\n');
+    console.log('\n╔══════════════════════════════════════╗');
+    console.log('║              PARSE TREE              ║');
+    console.log('╚══════════════════════════════════════╝');
     console.log(tree);
     await pause();
 
     // Display and save PBASIC code
-    console.log('\n=== Generated PBASIC Code ===\n');
+    console.log('\n╔══════════════════════════════════════╗');
+    console.log('║          GENERATED PBASIC CODE       ║');
+    console.log('╚══════════════════════════════════════╝');
     console.log(code);
 
     // Save to file
@@ -133,7 +150,7 @@ async function mainLoop() {
       await mkdir(outputDir, { recursive: true });
       const outputPath = join(outputDir, 'IZEBOT.BSP');
       await writeFile(outputPath, code, 'utf-8');
-      console.log(`\nPBASIC code saved to: ${outputPath}`);
+      console.log(`\nThe PBASIC code file was saved to: ${outputPath}`);
     } catch (error) {
       console.error('Error saving file:', error);
     }
