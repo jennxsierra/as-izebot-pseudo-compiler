@@ -1,180 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>iZEBOT Compiler</title>
-  <style>
-    body {
-      font-family: monospace;
-      background-color: #fafafa;
-      color: #222;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    textarea {
-      width: 100%;
-      height: 100px;
-      margin-bottom: 10px;
-      font-family: monospace;
-      font-size: 14px;
-    }
-    button {
-      padding: 8px 16px;
-      margin: 5px;
-      cursor: pointer;
-    }
-    pre {
-      background: #f0f0f0;
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-      overflow-x: auto;
-      white-space: pre;
-      font-family: monospace;
-    }
-    canvas {
-      border: 1px solid #000;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-  <h1>THIS PAGE ISN'T PART OF THE PROGRAM — CREATED FOR FUN the bot doesnt use pbasic output </h1>
-  <h2>iZEBOT Meta-Language Compiler</h2>
-  <p>AssemblyScript Demo: 1 + 2 = <span id="addResult"></span></p>
-  <p>Enter your iZEBOT code and click <b>Compile</b> to generate PBASIC + Tree:</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iZEBOT Compiler</title>
+    <style>
+      body {
+        font-family: monospace;
+        background-color: #fafafa;
+        color: #222;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      textarea {
+        width: 100%;
+        height: 100px;
+        margin-bottom: 10px;
+        font-family: monospace;
+        font-size: 14px;
+      }
+      button {
+        padding: 8px 16px;
+        margin: 5px;
+        cursor: pointer;
+      }
+      pre {
+        background: #f0f0f0;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        overflow-x: auto;
+        white-space: pre;
+        font-family: monospace;
+      }
+      canvas {
+        border: 1px solid #000;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>THIS PAGE WAS CREATED FOR FUN, IT IS NOT PART OF THE PROJECT!</h1>
+    <h2>iZEBOT Meta-Language Compiler</h2>
+    <p>
+      Enter your iZEBOT code and click <b>Compile</b> to generate PBASIC + Tree:
+    </p>
 
-  <textarea id="input">EXEC key A = DRVF> key B = DRVB> key C = SPNL> key D = SPNR> HALT</textarea>
-  <br />
-  <button id="compileBtn">Compile</button>
-  <button id="downloadBtn" style="display:none;">Download PBASIC</button>
+    <textarea id="input">
+EXEC key A = DRVF > key B = DRVB > key C = SPNL > key D = SPNR > HALT</textarea
+    >
+    <br />
+    <button id="compileBtn">Compile</button>
+    <button id="downloadBtn" style="display: none">Download PBASIC</button>
 
-  <h2>Output:</h2>
-  <pre id="output"></pre>
+    <h2>Output:</h2>
+    <pre id="output"></pre>
 
-  <h2>Bot Simulator</h2>
-  <p>Controls: A=Forward, B=Backward, C=SpinLeft, D=SpinRight</p>
-  <canvas id="botCanvas" width="400" height="400"></canvas><br />
-  <button id="btnA">A </button>
-  <button id="btnB">B </button>
-  <button id="btnC">C </button>
-  <button id="btnD">D</button>
+    <h2>Bot Simulator</h2>
+    <canvas id="botCanvas" width="400" height="400"></canvas><br />
+    <button id="btnA">A</button>
+    <button id="btnB">B</button>
+    <button id="btnC">C</button>
+    <button id="btnD">D</button>
 
-  <script type="module">
-    import { compile } from "./build/release.js";
+    <script type="module">
+      import { compile } from "./build/release.js";
 
-    // Simple demo: compile a basic input to show it works
-    const demoResult = compile("EXEC key A = DRVF> HALT");
-    document.getElementById("addResult").textContent = demoResult.includes("Input accepted") ? "3 (demo compile works)" : "Error";
+      // Simple demo: compile a basic input to show it works
+      const demoResult = compile("EXEC key A = DRVF> HALT");
+      const addEl = document.getElementById("addResult");
+      if (addEl) {
+        addEl.textContent = demoResult.includes("Input accepted")
+          ? "3 (demo compile works)"
+          : "Error";
+      }
+      const inputTextarea = document.getElementById("input");
+      const compileBtn = document.getElementById("compileBtn");
+      const outputPre = document.getElementById("output");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const botCanvas = document.getElementById("botCanvas");
+      const ctx = botCanvas.getContext("2d");
 
-    const inputTextarea = document.getElementById("input");
-    const compileBtn = document.getElementById("compileBtn");
-    const outputPre = document.getElementById("output");
-    const downloadBtn = document.getElementById("downloadBtn");
-    const botCanvas = document.getElementById("botCanvas");
-    const ctx = botCanvas.getContext("2d");
+      // --- Bot State ---
+      let botX = 200,
+        botY = 200,
+        botAngle = 0;
+      const botSpeed = 10,
+        turnSpeed = 0.25;
+      let keyMappings = {};
 
-    // --- Bot State ---
-    let botX = 200, botY = 200, botAngle = 0;
-    const botSpeed = 10, turnSpeed = 0.25;
-    let keyMappings = {};
-
-    function drawBot() {
-      ctx.clearRect(0, 0, botCanvas.width, botCanvas.height);
-      const sq = 20;
-      for (let x = 0; x < botCanvas.width; x += sq)
-        for (let y = 0; y < botCanvas.height; y += sq) {
-          ctx.fillStyle = (x/sq + y/sq) % 2 ? "#ccc" : "#eee";
-          ctx.fillRect(x, y, sq, sq);
-        }
-      ctx.save();
-      ctx.translate(botX, botY);
-      ctx.rotate(botAngle);
-      // Draw rectangle bot: red fill, blue outline
-      ctx.fillStyle = "red";
-      ctx.fillRect(-20, -10, 40, 20);
-      ctx.strokeStyle = "blue";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(-20, -10, 40, 20);
-      ctx.restore();
-      
-    }
-    drawBot();
-
-    function moveBot(key) {
-      const move = keyMappings[key];
-      if (!move) return alert(`No mapping for key ${key}`);
-      switch (move) {
-        case "DRVF": botX += Math.cos(botAngle)*botSpeed; botY += Math.sin(botAngle)*botSpeed; break;
-        case "DRVB": botX -= Math.cos(botAngle)*botSpeed; botY -= Math.sin(botAngle)*botSpeed; break;
-        case "TRNL": botAngle -= turnSpeed; break;
-        case "TRNR": botAngle += turnSpeed; break;
-        case "SPNL": botAngle -= turnSpeed; break;
-        case "SPNR": botAngle += turnSpeed; break;
+      function drawBot() {
+        ctx.clearRect(0, 0, botCanvas.width, botCanvas.height);
+        const sq = 20;
+        for (let x = 0; x < botCanvas.width; x += sq)
+          for (let y = 0; y < botCanvas.height; y += sq) {
+            ctx.fillStyle = (x / sq + y / sq) % 2 ? "#ccc" : "#eee";
+            ctx.fillRect(x, y, sq, sq);
+          }
+        ctx.save();
+        ctx.translate(botX, botY);
+        ctx.rotate(botAngle);
+        // Draw rectangle bot: red fill, blue outline
+        ctx.fillStyle = "red";
+        ctx.fillRect(-20, -10, 40, 20);
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-20, -10, 40, 20);
+        ctx.restore();
       }
       drawBot();
-    }
 
-    document.getElementById("btnA").onclick = ()=>moveBot("A");
-    document.getElementById("btnB").onclick = ()=>moveBot("B");
-    document.getElementById("btnC").onclick = ()=>moveBot("C");
-    document.getElementById("btnD").onclick = ()=>moveBot("D");
-
-    // compile function is already imported above
-
-    function parseAssignments(input) {
-      const regex = /key\s+([A-Z])\s*=\s*([A-Z]+)\s*>/gi;
-      const out = [];
-      let m;
-      while ((m = regex.exec(input)) !== null) out.push({ key: m[1], mov: m[2] });
-      return out;
-    }
-
-    // Update key mappings dynamically on input change
-    inputTextarea.addEventListener('input', () => {
-      const assignments = parseAssignments(inputTextarea.value);
-      keyMappings = {};
-      for (const a of assignments) keyMappings[a.key] = a.mov;
-    });
-
-    // Set initial mappings
-    const initialAssignments = parseAssignments(inputTextarea.value);
-    keyMappings = {};
-    for (const a of initialAssignments) keyMappings[a.key] = a.mov;
-
-    compileBtn.addEventListener("click", () => {
-      const input = inputTextarea.value;
-      const result = compile(input);
-      outputPre.textContent = result;
-
-      const assignments = parseAssignments(input);
-      keyMappings = {};
-      for (const a of assignments) keyMappings[a.key] = a.mov;
-
-      if (result.includes("Generated PBASIC")) {
-        downloadBtn.style.display = "inline";
-        // Extract PBASIC code for download
-        const lines = result.split('\n');
-        const pbasicStart = lines.findIndex(line => line.includes('Generated PBASIC program:'));
-        const pbasicLines = lines.slice(pbasicStart + 1).filter(line => line.trim() !== '');
-        const pbasicCode = pbasicLines.join('\n');
-        downloadBtn.onclick = () => {
-          const blob = new Blob([pbasicCode], { type: "text/plain" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "IZEBOT.BSP";
-          a.click();
-          URL.revokeObjectURL(url);
-        };
-      } else {
-        downloadBtn.style.display = "none";
+      function moveBot(key) {
+        const move = keyMappings[key];
+        if (!move) return alert(`No mapping for key ${key}`);
+        switch (move) {
+          case "DRVF":
+            botX += Math.cos(botAngle) * botSpeed;
+            botY += Math.sin(botAngle) * botSpeed;
+            break;
+          case "DRVB":
+            botX -= Math.cos(botAngle) * botSpeed;
+            botY -= Math.sin(botAngle) * botSpeed;
+            break;
+          case "TRNL":
+            botAngle -= turnSpeed;
+            break;
+          case "TRNR":
+            botAngle += turnSpeed;
+            break;
+          case "SPNL":
+            botAngle -= turnSpeed;
+            break;
+          case "SPNR":
+            botAngle += turnSpeed;
+            break;
+        }
+        drawBot();
       }
-    });
 
+      document.getElementById("btnA").onclick = () => moveBot("A");
+      document.getElementById("btnB").onclick = () => moveBot("B");
+      document.getElementById("btnC").onclick = () => moveBot("C");
+      document.getElementById("btnD").onclick = () => moveBot("D");
 
-  </script>
-</body>
+      // compile function is already imported above
+
+      function parseAssignments(input) {
+        const regex = /key\s+([A-Z])\s*=\s*([A-Z]+)\s*>/gi;
+        const out = [];
+        let m;
+        while ((m = regex.exec(input)) !== null)
+          out.push({ key: m[1], mov: m[2] });
+        return out;
+      }
+
+      // Update key mappings dynamically on input change
+      inputTextarea.addEventListener("input", () => {
+        const assignments = parseAssignments(inputTextarea.value);
+        keyMappings = {};
+        for (const a of assignments) keyMappings[a.key] = a.mov;
+      });
+
+      // Set initial mappings
+      const initialAssignments = parseAssignments(inputTextarea.value);
+      keyMappings = {};
+      for (const a of initialAssignments) keyMappings[a.key] = a.mov;
+
+      compileBtn.addEventListener("click", () => {
+        const input = inputTextarea.value;
+        const result = compile(input);
+        outputPre.textContent = result;
+
+        const assignments = parseAssignments(input);
+        keyMappings = {};
+        for (const a of assignments) keyMappings[a.key] = a.mov;
+
+        if (result.includes("Generated PBASIC")) {
+          downloadBtn.style.display = "inline";
+          // Extract PBASIC code for download
+          const lines = result.split("\n");
+          const pbasicStart = lines.findIndex((line) =>
+            line.includes("Generated PBASIC program:")
+          );
+          const pbasicLines = lines
+            .slice(pbasicStart + 1)
+            .filter((line) => line.trim() !== "");
+          const pbasicCode = pbasicLines.join("\n");
+          downloadBtn.onclick = () => {
+            const blob = new Blob([pbasicCode], { type: "text/plain" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "IZEBOT.BSP";
+            a.click();
+            URL.revokeObjectURL(url);
+          };
+        } else {
+          downloadBtn.style.display = "none";
+        }
+      });
+    </script>
+  </body>
 </html>
