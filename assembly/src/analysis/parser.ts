@@ -582,7 +582,13 @@ export class Parser {
   }
 
   private getKeyValue(keyNode: ASTNode): string {
-    // Delegate to ASTNode.firstTerminalValue()
+    // The <key> node has the form: 'key' <key_id>
+    // ASTNode.firstTerminalValue() returns the first terminal (which is the literal 'key'),
+    // so explicitly return the KEY_ID child value when available.
+    if (keyNode.nodeType == NodeType.KEY && keyNode.children.length >= 2) {
+      return keyNode.children[1].firstTerminalValue();
+    }
+    // Fallback: return the first terminal value
     return keyNode.firstTerminalValue();
   }
 
