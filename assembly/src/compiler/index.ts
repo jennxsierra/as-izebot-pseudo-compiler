@@ -11,9 +11,9 @@ export function compile(input: string): string {
   
   // Step 2: Parse and derive
   let parser = new Parser(tokens);
-  let success = parser.parse();
-  
-  if (!success) {
+  let parseResult = parser.parse();
+
+  if (parseResult == null) {
     let error = parser.getErrorMessage();
     if (error.length == 0) {
       error = 'Unknown parsing error';
@@ -23,11 +23,11 @@ export function compile(input: string): string {
   
   // Step 3: Get results
   let derivation = parser.getDerivation();
-  let symbolTable = parser.getSymbolTable();
+  let symbolMap = parser.getSymbolMap();
   let parseTree = parser.getParseTree();
   
   // Step 4: Generate PBASIC code
-  let generator = new CodeGenerator(symbolTable);
+  let generator = new CodeGenerator(symbolMap);
   let pbasicCode = generator.generate();
   
   // Return all results as a formatted string

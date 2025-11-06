@@ -42,17 +42,6 @@ export class Token {
   }
 }
 
-// Symbol table entry for key bindings
-export class SymbolEntry {
-  key: string;
-  move: string;
-
-  constructor(key: string, move: string) {
-    this.key = key;
-    this.move = move;
-  }
-}
-
 // Derivation step for leftmost derivation
 export class DerivationStep {
   stepNumber: i32;

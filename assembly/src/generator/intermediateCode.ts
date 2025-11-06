@@ -1,11 +1,10 @@
-import { SymbolEntry } from '../components/types';
 import { PBASICBlocks } from './pbasicBlocks';
 
 export class CodeGenerator {
-  private symbolTable: SymbolEntry[];
+  private symbolMap: Map<string,string>;
 
-  constructor(symbolTable: SymbolEntry[]) {
-    this.symbolTable = symbolTable;
+  constructor(symbolMap: Map<string,string>) {
+    this.symbolMap = symbolMap;
   }
 
   generate(): string {
@@ -14,12 +13,14 @@ export class CodeGenerator {
     // Add header
     code += PBASICBlocks.getHeader();
     
-    // Add body - IF statements for each key binding
-    for (let i = 0; i < this.symbolTable.length; i++) {
-      let entry = this.symbolTable[i];
-      let routine = PBASICBlocks.getRoutineName(entry.move);
-      let lowerKey = this.toLower(entry.key);
-      code += 'IF KEY = "' + entry.key + '" OR KEY = "' + lowerKey + '" THEN GOSUB ' + routine + '\n';
+    // Add body - IF statements for each key binding (iterate map keys)
+    let keys = this.symbolMap.keys();
+    for (let i = 0; i < keys.length; i++) {
+      let key = keys[i];
+      let move = this.symbolMap.get(key);
+      let routine = PBASICBlocks.getRoutineName(move);
+      let lowerKey = this.toLower(key);
+      code += 'IF KEY = "' + key + '" OR KEY = "' + lowerKey + '" THEN GOSUB ' + routine + '\n';
     }
     
     // Add footer 1
@@ -39,8 +40,10 @@ export class CodeGenerator {
 
   private getUsedMoves(): string[] {
     let moves: string[] = [];
-    for (let i = 0; i < this.symbolTable.length; i++) {
-      let move = this.symbolTable[i].move;
+    let keys = this.symbolMap.keys();
+    for (let i = 0; i < keys.length; i++) {
+      let k = keys[i];
+      let move = this.symbolMap.get(k);
       if (!this.arrayContains(moves, move)) {
         moves.push(move);
       }

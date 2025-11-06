@@ -14,6 +14,11 @@ export class DerivationLogger {
     this.steps.push(new DerivationStep(this.stepNumber, sententialForm));
   }
 
+  // Add a formatted derivation step from prefix, middle and suffix pieces.
+  addFormatted(prefix: string, middle: string, suffix: string): void {
+    this.addStep(prefix + middle + suffix);
+  }
+
   getSteps(): DerivationStep[] {
     return this.steps;
   }

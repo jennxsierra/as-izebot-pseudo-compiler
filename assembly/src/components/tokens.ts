@@ -1,4 +1,4 @@
-import { Token, TokenType } from './types';
+import { TokenType } from './types';
 
 // Token utilities
 export class TokenUtils {

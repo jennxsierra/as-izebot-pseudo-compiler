@@ -13,7 +13,7 @@ async function initialize() {
 }
 
 function displayGrammar() {
-  console.log('BNF Grammar:');
+  console.log('\nBNF Grammar:');
   console.log('<program>      →  EXEC <stmt_list> HALT');
   console.log('<stmt_list>    →  <binding> > | <binding> > <stmt_list>');
   console.log('<binding>      →  <key> = <move>');
@@ -37,7 +37,7 @@ async function mainLoop() {
 
   const pause = (): Promise<void> => {
     return new Promise((resolve) => {
-      rl.question('\nPress Enter to continue...\n', () => {
+      rl.question('\nPress Enter to continue...', () => {
         resolve();
       });
     });
@@ -65,7 +65,6 @@ async function mainLoop() {
     if (result.startsWith('ERROR:')) {
       const errorMsg = result.substring(6);
       console.error(errorMsg);
-      console.log('\nInvalid sentence of the meta-language');
       await pause();
       continue;
     }

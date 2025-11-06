@@ -33,4 +33,24 @@ export class ASTNode {
     if (this.nodeType == NodeType.MOVE) return '<move>';
     return this.value; // Terminal
   }
+  
+  // Return concatenated terminal text of this node's subtree (space-separated)
+  text(): string {
+    if (this.children.length == 0) return this.value;
+    let parts: string[] = [];
+    for (let i = 0; i < this.children.length; i++) {
+      parts.push(this.children[i].text());
+    }
+    return parts.join(" ");
+  }
+
+  // Return the first terminal value found in the subtree or empty string
+  firstTerminalValue(): string {
+    if (this.children.length == 0) return this.value;
+    for (let i = 0; i < this.children.length; i++) {
+      let v = this.children[i].firstTerminalValue();
+      if (v != "") return v;
+    }
+    return "";
+  }
 }
