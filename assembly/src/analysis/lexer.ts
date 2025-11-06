@@ -1,3 +1,7 @@
+// Lexer: convert input string into a stream of tokens for the parser.
+// Keeps logic small and deterministic: whitespace is skipped and any
+// unknown lexeme is emitted as an INVALID token for later contextual
+// reporting by the parser.
 import { Token, TokenType } from '../components/types';
 import { TokenUtils } from '../components/tokens';
 
@@ -14,6 +18,8 @@ export class Lexer {
     }
   }
 
+  // Advance the current position by one character and update 'currentChar'.
+  // Keeps a sentinel empty string when we pass the end of input.
   private advance(): void {
     this.position++;
     if (this.position < this.input.length) {
@@ -23,6 +29,8 @@ export class Lexer {
     }
   }
 
+  // Consume ASCII whitespace (space, newline, CR, tab) until a non-space char
+  // or end-of-input is reached.
   private skipWhitespace(): void {
     while (this.currentChar == ' ' || this.currentChar == '\n' || 
            this.currentChar == '\r' || this.currentChar == '\t') {
@@ -30,6 +38,8 @@ export class Lexer {
     }
   }
 
+  // Read an adjacent alphanumeric sequence (keyword, key id, or move mnemonic).
+  // Stops at the first non-alphanumeric character and returns the lexeme.
   private readIdentifier(): string {
     let result = '';
     let startPos = this.position;
@@ -40,6 +50,8 @@ export class Lexer {
     return result;
   }
 
+  // Simple ASCII-only alphanumeric check (letters and digits).
+  // This intentionally avoids unicode handling for determinism.
   private isAlphaNumeric(char: string): bool {
     if (char.length == 0) return false;
     let code = char.charCodeAt(0);
@@ -84,13 +96,14 @@ export class Lexer {
         } else if (TokenUtils.isMove(word)) {
           tokens.push(new Token(TokenType.MOVE, word, startPos));
         } else {
-          // Invalid token
+          // Unknown lexeme: emit INVALID token rather than throwing.
+          // Higher-level parser will produce contextual error messages.
           tokens.push(new Token(TokenType.INVALID, word, startPos));
         }
         continue;
       }
 
-      // If we get here, it's an invalid character
+      // Non-alphanumeric single character that isn't recognized — emit INVALID
       tokens.push(new Token(TokenType.INVALID, this.currentChar, startPos));
       this.advance();
     }

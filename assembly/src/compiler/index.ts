@@ -1,3 +1,10 @@
+// Compiler entrypoint used by the WASM host.
+// Responsibilities:
+// - Run lexical analysis, parsing, and leftmost-derivation logging
+// - Build a parse tree and generate PBASIC intermediate code
+// - Return a single formatted string containing markers and sections
+//   (DERIVATION_START/END, TREE_START/END, CODE_START/END) that the
+//   host will split and display to the user.
 import { Lexer } from '../analysis/lexer';
 import { Parser } from '../analysis/parser';
 import { TreeRenderer } from '../analysis/tree';

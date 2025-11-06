@@ -1,6 +1,8 @@
 // PBASIC code block templates
+// PBASIC code block templates used by the generator. The contents are
+// intentionally static to match the specification exactly.
 export class PBASICBlocks {
-  
+
   static getHeader(): string {
     let header = '';
     header += '\'{$STAMP BS2p}\n';

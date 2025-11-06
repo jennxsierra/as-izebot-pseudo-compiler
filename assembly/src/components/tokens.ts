@@ -1,8 +1,7 @@
 import { TokenType } from './types';
 
-// Token utilities
+// Lightweight token utilities used throughout lexer/parser.
 export class TokenUtils {
-  
   static tokenTypeToString(type: TokenType): string {
     if (type == TokenType.EXEC) return 'EXEC';
     if (type == TokenType.HALT) return 'HALT';
@@ -15,14 +14,17 @@ export class TokenUtils {
     return 'INVALID';
   }
 
+  // Recognize grammar keywords exactly (case-sensitive)
   static isKeyword(str: string): bool {
     return str == 'EXEC' || str == 'HALT' || str == 'key';
   }
 
+  // Valid key identifiers per grammar
   static isKeyID(str: string): bool {
     return str == 'A' || str == 'B' || str == 'C' || str == 'D';
   }
 
+  // Valid movement mnemonics per grammar
   static isMove(str: string): bool {
     return str == 'DRVF' || str == 'DRVB' || str == 'TRNL' || 
            str == 'TRNR' || str == 'SPNL' || str == 'SPNR';

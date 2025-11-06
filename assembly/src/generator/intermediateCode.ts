@@ -1,5 +1,9 @@
+// Generate PBASIC code from the parser's symbol map.
+// Responsibilities:
+// - Emit the fixed HEADER and FOOTER blocks exactly as specified
+// - Emit BODY IF lines in same order as bindings were added to the symbol map
+// - Include only the movement subroutines that are actually referenced
 import { PBASICBlocks } from './pbasicBlocks';
-
 export class CodeGenerator {
   private symbolMap: Map<string,string>;
 
@@ -7,37 +11,39 @@ export class CodeGenerator {
     this.symbolMap = symbolMap;
   }
 
+  // Produce the full PBASIC program as a single string
   generate(): string {
     let code = '';
-    
-    // Add header
+    // Header (static)
     code += PBASICBlocks.getHeader();
-    
-    // Add body - IF statements for each key binding (iterate map keys)
+
+    // Body - emit IF lines for each binding in insertion order
     let keys = this.symbolMap.keys();
     for (let i = 0; i < keys.length; i++) {
       let key = keys[i];
       let move = this.symbolMap.get(key);
       let routine = PBASICBlocks.getRoutineName(move);
       let lowerKey = this.toLower(key);
+      // Per spec: accept uppercase or lowercase key at runtime
       code += '          IF KEY = "' + key + '" OR KEY = "' + lowerKey + '" THEN GOSUB ' + routine + '\n';
     }
-    
-    // Add footer 1
+
+    // Footer1 (static): loop and movement section header
     code += PBASICBlocks.getFooter1();
-    
-    // Add movement subroutines (only those referenced)
+
+    // Emit only used movement subroutines
     let usedMoves: string[] = this.getUsedMoves();
     for (let i = 0; i < usedMoves.length; i++) {
       code += PBASICBlocks.getMovementSubroutine(usedMoves[i]);
     }
-    
-    // Add footer 2
+
+    // Footer2 (static): Motor_OFF and trailer
     code += PBASICBlocks.getFooter2();
-    
+
     return code;
   }
 
+  // Determine unique movement mnemonics referenced by the symbol map
   private getUsedMoves(): string[] {
     let moves: string[] = [];
     let keys = this.symbolMap.keys();

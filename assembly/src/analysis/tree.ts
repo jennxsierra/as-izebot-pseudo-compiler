@@ -1,11 +1,8 @@
+// Parse Tree Visualization Module
+// Renders a vertical ASCII parse tree from an AST. The renderer computes
+// layout (width/depth) then paints labels and connecting characters into
+// a simple 2D grid before flattening to lines.
 import { ASTNode } from '../components/ast';
-
-/* Parse Tree Visualization Module
- * 
- * This module provides data structures and rendering functions for displaying
- * parse trees in ASCII format. Parse trees show the hierarchical structure
- * of how the grammar rules were applied to derive the input sentence
- */
 
 // Constants for vertical tree rendering
 const SIBLING_SPACING: i32 = 2;    // Horizontal space between sibling nodes

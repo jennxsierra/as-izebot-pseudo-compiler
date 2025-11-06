@@ -1,3 +1,9 @@
+// Parser implementing the exact BNF specified by the assignment.
+// Responsibilities:
+// - Validate token sequence against the grammar
+// - Produce leftmost derivation steps via DerivationLogger
+// - Build a simple AST (ASTNode) for tree rendering and code generation
+// - Enforce precise error messages using error helpers
 import { Token, TokenType } from "../components/types";
 import { errorMessage, errorToken, errorTokens } from "../components/errors";
 import { DerivationLogger } from "./derivation";

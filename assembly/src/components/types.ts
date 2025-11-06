@@ -42,7 +42,7 @@ export class Token {
   }
 }
 
-// Derivation step for leftmost derivation
+// Derivation step for leftmost derivation, used in DerivationLogger
 export class DerivationStep {
   stepNumber: i32;
   sententialForm: string;

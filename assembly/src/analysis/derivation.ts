@@ -1,3 +1,5 @@
+// Simple derivation logger used to record leftmost derivation steps.
+// Each call to addStep records the next sentential form with an incremented step number.
 import { DerivationStep } from '../components/types';
 
 export class DerivationLogger {
