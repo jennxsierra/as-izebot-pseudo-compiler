@@ -7,25 +7,24 @@ import { ASTNode } from '../components/ast';
  * of how the grammar rules were applied to derive the input sentence
  */
 
-/* Constants for vertical tree rendering */
+// Constants for vertical tree rendering
 const SIBLING_SPACING: i32 = 2;    // Horizontal space between sibling nodes
 const LEVEL_ROW_HEIGHT: i32 = 2;   // Vertical space between tree levels
 
-/* Tree drawing characters - using box drawing for cleaner appearance */
-const VERTICAL_LINE: string = '│';     // Vertical connector
-const HORIZONTAL_LINE: string = '─';   // Horizontal connector  
-const JUNCTION_DOWN: string = '┬';     // T-junction pointing down
-const JUNCTION_UP: string = '┴';       // T-junction pointing up
-const CORNER_LEFT: string = '┌';       // Top-left corner
-const CORNER_RIGHT: string = '┐';      // Top-right corner
-const JUNCTION: string = '┼';          // Four-way junction
+// Tree drawing characters
+const VERTICAL_LINE: string = '│';
+const HORIZONTAL_LINE: string = '─'; 
+const JUNCTION_DOWN: string = '┬';
+const JUNCTION_UP: string = '┴';
+const CORNER_LEFT: string = '┌';
+const CORNER_RIGHT: string = '┐';
+const JUNCTION: string = '┼';
 
 export class TreeRenderer {
   
   /* Render parse tree as vertical ASCII art
-   * 
    * Converts the hierarchical tree structure into a traditional vertical tree
-   * representation. */
+   * representation */
   static renderVertical(root: ASTNode): string {
     let w = TreeRenderer.measureWidth(root);
     let h = TreeRenderer.measureDepth(root) * LEVEL_ROW_HEIGHT + 1;
@@ -68,7 +67,7 @@ export class TreeRenderer {
     return result.join('\n');
   }
 
-  /* Measure the width required for a node and its subtree */
+  // Measure the width required for a node and its subtree
   private static measureWidth(node: ASTNode): i32 {
     let labelWidth: i32 = node.getNodeName().length;
     if (labelWidth == 0) {
@@ -93,7 +92,7 @@ export class TreeRenderer {
     return childrenWidth > labelWidth ? childrenWidth : labelWidth;
   }
 
-  /* Measure the depth (height) of a node's subtree */
+  // Measure the depth (height) of a node's subtree
   private static measureDepth(node: ASTNode): i32 {
     if (node.children.length == 0) {
       return 1;
@@ -110,7 +109,7 @@ export class TreeRenderer {
     return 1 + maxChildDepth;
   }
 
-  /* Render a node and its subtree into the grid */
+  // Render a node and its subtree into the grid
   private static renderNode(grid: string[][], node: ASTNode, startX: i32, y: i32): i32 {
     let w = TreeRenderer.measureWidth(node);
     if (w <= 0) {

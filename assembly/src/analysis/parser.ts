@@ -8,7 +8,7 @@ export class Parser {
   private position: i32;
   private currentToken: Token;
   private derivation: DerivationLogger;
-  private symbolMap: Map<string,string>;
+  private symbolMap: Map<string, string>;
   private parseTree: ASTNode | null;
   private errorMessage: string;
 
@@ -18,7 +18,7 @@ export class Parser {
     this.currentToken =
       tokens.length > 0 ? tokens[0] : new Token(TokenType.EOF, "", 0);
     this.derivation = new DerivationLogger();
-  this.symbolMap = new Map<string,string>();
+    this.symbolMap = new Map<string, string>();
     this.parseTree = null;
     this.errorMessage = "";
   }
@@ -52,7 +52,7 @@ export class Parser {
 
   // Validate an assignment token window (tokens between current position and the next '>' or HALT).
   // Throws precise ParseErrors per the instruction file on violation.
-  private validateAssignmentWindow(tokenList: Token[]): bool {
+  private validateAssignmentWindow(tokenList: Token[], startIndex: i32): bool {
     let eqCount: i32 = 0;
     let eqIndex: i32 = -1;
     for (let i = 0; i < tokenList.length; i++) {
@@ -60,6 +60,31 @@ export class Parser {
         eqCount++;
         if (eqIndex == -1) eqIndex = i;
       }
+    }
+
+    // If the token window is empty, there's an immediate '>' (or HALT/EOF) at `startIndex`.
+    // Report a clearer error pointing at that token instead of an empty token list.
+    if (tokenList.length == 0) {
+      if (startIndex < this.tokens.length) {
+        const offending = this.tokens[startIndex];
+        this.report(
+          errorToken(
+            offending,
+            "Missing assignment before '>'",
+            this.getSourceTag("<binding>")
+          ).message
+        );
+        return false;
+      }
+      // Fallback to the generic '=' message when we can't locate the offending token
+      this.report(
+        errorTokens(
+          tokenList,
+          "Expected '=' in assignment",
+          this.getSourceTag("<binding>")
+        ).message
+      );
+      return false;
     }
 
     if (eqCount == 0) {
@@ -74,6 +99,8 @@ export class Parser {
     }
 
     if (eqCount > 1) {
+      // Report the generic multiple '=' error (keeps existing message), then
+      // also point at the second '=' which usually indicates where a '>' is missing.
       this.report(
         errorTokens(
           tokenList,
@@ -81,6 +108,40 @@ export class Parser {
           this.getSourceTag("<binding>")
         ).message
       );
+
+      // Find the second '=' token within the window
+      let seen: i32 = 0;
+      let secondEqIndex: i32 = -1;
+      for (let i = 0; i < tokenList.length; i++) {
+        if (tokenList[i].type == TokenType.EQUALS) {
+          seen++;
+          if (seen == 2) {
+            secondEqIndex = i;
+            break;
+          }
+        }
+      }
+      if (secondEqIndex != -1) {
+        // Prefer reporting the position where the next binding begins (the 'key' token)
+        // which is the correct insertion point for the missing '>' separator.
+        let insertIndex: i32 = -1;
+        // eqIndex is the index of the first '=' inside tokenList
+        for (let i = eqIndex + 1; i < tokenList.length; i++) {
+          if (tokenList[i].type == TokenType.KEY) {
+            insertIndex = tokenList[i].position;
+            break;
+          }
+        }
+        // Fallback: use the second '=' position if we couldn't find a next 'key'
+        if (insertIndex == -1) insertIndex = tokenList[secondEqIndex].position;
+
+        this.report(
+          errorMessage(
+            "Missing '>' between assignments @ index " + insertIndex.toString(),
+            this.getSourceTag("<binding>")
+          ).message
+        );
+      }
       return false;
     }
 
@@ -372,7 +433,7 @@ export class Parser {
     ]);
 
     // Validate assignment-level constraints (returns false on violation)
-    if (!this.validateAssignmentWindow(tokenList)) return null;
+    if (!this.validateAssignmentWindow(tokenList, start)) return null;
 
     this.derivation.addFormatted(prefix, "<key> = <move>", suffix);
 
@@ -463,9 +524,22 @@ export class Parser {
     // <key_id> -> A | B | C | D
     let node = new ASTNode(NodeType.KEY_ID, "<key_id>");
 
-    if (!this.expect(TokenType.KEY_ID, "<key_id>")) return null;
+    // Key ID token must be of type KEY_ID
+    if (this.currentToken.type != TokenType.KEY_ID) {
+      this.report(
+        errorToken(
+          this.currentToken,
+          "Invalid key id. \nValid key id values are {A, B, C, D}",
+          this.getSourceTag("<key_id>")
+        ).message
+      );
+      return null;
+    }
 
-    // Safe to access value after expect succeeds
+    // consume the KEY_ID
+    this.advance();
+
+    // Safe to access value after consuming
     let keyIdValue = this.tokens[this.position - 1].value;
     this.derivation.addFormatted(prefix, keyIdValue, suffix);
 
@@ -483,7 +557,7 @@ export class Parser {
       this.report(
         errorToken(
           this.currentToken,
-          "Invalid movement value. Should be one of {DRVF, DRVB, TRNL, TRNR, SPNL, SPNR}",
+          "Invalid movement value. \nValid movement values are {DRVF, DRVB, TRNL, TRNR, SPNL, SPNR}",
           this.getSourceTag("<move>")
         ).message
       );
@@ -534,14 +608,13 @@ export class Parser {
 
   // Expose the internal map for callers that want to iterate directly.
   // Callers must use has() before get() to avoid exceptions on missing keys.
-  getSymbolMap(): Map<string,string> {
+  getSymbolMap(): Map<string, string> {
     return this.symbolMap;
   }
 
   getDerivation(): DerivationLogger {
     return this.derivation;
   }
-
 
   getParseTree(): ASTNode | null {
     return this.parseTree;
