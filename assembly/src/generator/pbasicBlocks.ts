@@ -5,17 +5,17 @@ export class PBASICBlocks {
     let header = '';
     header += '\'{$STAMP BS2p}\n';
     header += '\'{$PBASIC 2.5}\n';
-    header += 'KEY     VAR     Byte\n';
-    header += 'Main:     DO\n';
-    header += '         SERIN 3,2063,250,Timeout,[KEY]\n';
+    header += 'KEY      VAR     Byte\n';
+    header += 'Main:    DO\n';
+    header += '          SERIN 3,2063,250,Timeout,[KEY]\n';
     return header;
   }
 
   static getFooter1(): string {
     let footer = '';
-    footer += '   LOOP\n';
-    footer += 'Timeout:  GOSUB Motor_OFF\n';
-    footer += '    GOTO Main\n';
+    footer += '         LOOP\n';
+    footer += 'Timeout: GOSUB Motor_OFF\n';
+    footer += '         GOTO Main\n\n';
     footer += '\'+++++ Movement Procedure ++++++++++++++++++++++++++++++\n';
     return footer;
   }

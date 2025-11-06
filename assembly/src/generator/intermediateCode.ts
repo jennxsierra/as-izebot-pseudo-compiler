@@ -20,7 +20,7 @@ export class CodeGenerator {
       let move = this.symbolMap.get(key);
       let routine = PBASICBlocks.getRoutineName(move);
       let lowerKey = this.toLower(key);
-      code += 'IF KEY = "' + key + '" OR KEY = "' + lowerKey + '" THEN GOSUB ' + routine + '\n';
+      code += '          IF KEY = "' + key + '" OR KEY = "' + lowerKey + '" THEN GOSUB ' + routine + '\n';
     }
     
     // Add footer 1
