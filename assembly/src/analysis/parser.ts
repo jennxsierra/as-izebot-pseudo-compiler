@@ -286,11 +286,4 @@ export class Parser {
   getErrorMessage(): string {
     return this.errorMessage;
   }
-
-  private replaceFirst(str: string, search: string, replacement: string): string {
-    // Manual string replace implementation for AssemblyScript
-    let index = str.indexOf(search);
-    if (index < 0) return str;
-    return str.substring(0, index) + replacement + str.substring(index + search.length);
-  }
 }

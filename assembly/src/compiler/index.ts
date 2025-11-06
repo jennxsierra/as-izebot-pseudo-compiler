@@ -2,7 +2,6 @@ import { Lexer } from '../analysis/lexer';
 import { Parser } from '../analysis/parser';
 import { TreeRenderer } from '../analysis/tree';
 import { CodeGenerator } from '../generator/intermediateCode';
-import { Grammar } from '../components/grammar';
 
 // Exported functions for WASM interface
 export function compile(input: string): string {
@@ -76,8 +75,3 @@ export function compile(input: string): string {
   
   return result;
 }
-
-export function getGrammar(): string {
-  return Grammar.getBNF();
-}
-

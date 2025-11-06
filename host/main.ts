@@ -14,12 +14,12 @@ async function initialize() {
 
 function displayGrammar() {
   console.log('BNF Grammar:');
-  console.log('<program> -> EXEC <stmt_list> HALT');
-  console.log('<stmt_list> -> <binding> > | <binding> > <stmt_list>');
-  console.log('<binding> -> <key> = <move>');
-  console.log('<key> -> key <key_id>');
-  console.log('<key_id> -> A | B | C | D');
-  console.log('<move> -> DRVF | DRVB | TRNL | TRNR | SPNL | SPNR');
+  console.log('<program>      →  EXEC <stmt_list> HALT');
+  console.log('<stmt_list>    →  <binding> > | <binding> > <stmt_list>');
+  console.log('<binding>      →  <key> = <move>');
+  console.log('<key>          →  key <key_id>');
+  console.log('<key_id>       →  A | B | C | D');
+  console.log('<move>         →  DRVF | DRVB | TRNL | TRNR | SPNL | SPNR');
   console.log('');
 }
 
@@ -37,7 +37,7 @@ async function mainLoop() {
 
   const pause = (): Promise<void> => {
     return new Promise((resolve) => {
-      rl.question('\nPress Enter to continue...', () => {
+      rl.question('\nPress Enter to continue...\n', () => {
         resolve();
       });
     });
